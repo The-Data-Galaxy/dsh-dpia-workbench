@@ -15,6 +15,12 @@ Created and maintained by **[朱玲凤](https://xingchendata.com/)** · [个人�
 - **Separate risk, action and approval / 风险与整改分开记录：** Track measures and verification evidence while keeping professional review and business approval with people.
 - **Review reports by version / 报告带版本边界：** Preserve the basis, version and unresolved items; show blocking conditions when a formal report is not yet supported.
 
+## Demo video / 演示视频
+
+[Watch the 2-minute Chinese walkthrough on YouTube / 在线播放中文演示](https://youtu.be/KpXfrbogNZ0). It uses a synthetic example and shows the **0.3.10** interface: installation, materials, analysis results, follow-up answers, reassessment and the report entry. It does not show a completed formal report or download. Use the beta.5 installation instructions below; the video shows an older local `.tgz` installation.
+
+这段视频使用合成案例，画面录于 **0.3.10**；只展示到报告入口，没有拍摄正式报告生成或下载。安装当前 beta.5 请以本仓库命令为准。
+
 ## Current evidence / 当前证据
 
 - Published pre-release: **0.3.11-beta.5**. Its runtime JavaScript is unchanged from beta.4. See the matching release notes for artifact and installation evidence.
