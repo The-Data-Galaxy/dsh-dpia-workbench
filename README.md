@@ -1,16 +1,25 @@
 # DSH DPIA Workbench / DPIA 工作台
 
-> **Pre-release candidate.** Review the requirements and limits below before installing.
+> **Pre-release v0.3.11-beta.5.** Read the [release notes](https://github.com/The-Data-Galaxy/dsh-dpia-workbench/releases/tag/v0.3.11-beta.5) and limits below before installing.
 
 A DeepSeek Harness bundle for versioned data protection impact assessments. It keeps source material and fact corrections, supports follow-up questions and reassessment, and prepares reviewable reports with a record of versions and outstanding decisions.
 
 这是一个用于 DeepSeek Harness 的 DPIA 工作台插件：保留材料来源与事实修订，支持补答复评，并生成带版本和未决事项记录的报告。
 
+Created and maintained by **[朱玲凤](https://xingchendata.com/)** · [个人网站「那一片数据星辰」](https://xingchendata.com/).
+
+## What it does / 产品特点
+
+- **Trace facts to sources / 事实可追溯：** Keep source material, source locations and fact corrections together; distinguish a proposed design from confirmed implementation.
+- **Continue questions and reassess / 问题可接续：** Record answers and evidence, reassess after new material, and review changes and remaining gaps.
+- **Separate risk, action and approval / 风险与整改分开记录：** Track measures and verification evidence while keeping professional review and business approval with people.
+- **Review reports by version / 报告带版本边界：** Preserve the basis, version and unresolved items; show blocking conditions when a formal report is not yet supported.
+
 ## Current evidence / 当前证据
 
-- Source candidate version: **0.3.11-beta.5**. Its runtime JavaScript is unchanged from beta.4. Consult the matching release notes for tag-specific artifact and installation evidence.
+- Published pre-release: **0.3.11-beta.5**. Its runtime JavaScript is unchanged from beta.4. See the matching release notes for artifact and installation evidence.
 - The installed **0.3.10** baseline passed a real-host saved-result and refresh replay with DeepSeek Harness Desktop **0.2.0-rc.2** on macOS; its internal automated suite ended with 111 passing checks. That evidence does not certify the later source candidate.
-- The beta.4 predecessor was installed in an isolated DSH web profile. In Safari, the plugin entry and empty state appeared; a synthetic assessment was created and reopened after refresh without configuring a model key. No analysis or report was run.
+- beta.5 installed in a new isolated DSH web profile. In Safari, the plugin entry and empty state appeared; a synthetic assessment was created and reopened after refresh without configuring a model key. No analysis or report was run.
 - Installation on another machine, Windows compatibility, and full-page layout of long reports have not been established by this evidence.
 
 ## Workflow / 使用流程
@@ -53,7 +62,7 @@ The `test/` directory contains nine files adapted from the internal suite that d
 
 ## Installation / 安装
 
-Use a DSH profile whose existing plugins and data have been backed up. Once the named tag is published, install from GitHub, or install the exact release archive from its local path. Then start that profile:
+Use a DSH profile whose existing plugins and data have been backed up. Install from the published GitHub tag, or install the exact release archive from its local path. Then start that profile:
 
 ```sh
 dsh plugin --profile web add github:The-Data-Galaxy/dsh-dpia-workbench#v0.3.11-beta.5
@@ -61,6 +70,6 @@ dsh plugin --profile web add github:The-Data-Galaxy/dsh-dpia-workbench#v0.3.11-b
 dsh --profile web
 ```
 
-Replace `web` with the intended profile. These commands become usable only after the corresponding repository tag or archive is published. Installing the plugin does not start an assessment or call a model. To roll back, reinstall the previously verified archive. Assessment files are separate from the bundle; back them up before changing profiles or versions. Do not delete the data directory when removing the plugin.
+Replace `web` with the intended profile. Installing the plugin does not start an assessment or call a model. To roll back, reinstall the previously verified archive. Assessment files are separate from the bundle; back them up before changing profiles or versions. Do not delete the data directory when removing the plugin.
 
-请先备份目标 DSH profile 的插件与数据；对应仓库标签或归档公开后，再按精确版本安装并启动该 profile。`web` 可替换为实际 profile 名称。安装本身不会启动评估或调用模型；回退时重装先前验证过的包，保留并事先备份评估数据。
+请先备份目标 DSH profile 的插件与数据；按已公开的精确版本安装并启动该 profile。`web` 可替换为实际 profile 名称。安装本身不会启动评估或调用模型；回退时重装先前验证过的包，保留并事先备份评估数据。
