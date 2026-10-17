@@ -1,6 +1,6 @@
 {
   "name": "dsh-dpia-workbench",
-  "version": "0.3.11-beta.5",
+  "version": "0.3.11-beta.6",
   "description": "Versioned DPIA assessment, evidence, reevaluation and report workbench for DeepSeek Harness",
   "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "dpia", "gdpr", "privacy"],
   "license": "AGPL-3.0-only",
