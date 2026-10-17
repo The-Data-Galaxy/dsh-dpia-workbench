@@ -3,7 +3,7 @@
   "version": "0.3.11-beta.5",
   "description": "Versioned DPIA assessment, evidence, reevaluation and report workbench for DeepSeek Harness",
   "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "dpia", "gdpr", "privacy"],
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0-only",
   "private": true,
   "type": "module",
   "main": "index.js",

@@ -2,6 +2,8 @@
 
 > **Pre-release v0.3.11-beta.5.** Read the [release notes](https://github.com/The-Data-Galaxy/dsh-dpia-workbench/releases/tag/v0.3.11-beta.5) and limits below before installing.
 
+**License note:** `main` now uses `AGPL-3.0-only` for original project material. The linked beta.5 tag and archive remain Apache-2.0. See [License and third-party materials](#license-and-third-party-materials--许可与第三方素材).
+
 A DeepSeek Harness bundle for versioned data protection impact assessments. It keeps source material and fact corrections, supports follow-up questions and reassessment, and prepares reviewable reports with a record of versions and outstanding decisions.
 
 这是一个用于 DeepSeek Harness 的 DPIA 工作台插件：保留材料来源与事实修订，支持补答复评，并生成带版本和未决事项记录的报告。
@@ -42,9 +44,9 @@ Created and maintained by **[朱玲凤](https://xingchendata.com/)** · [个人�
 
 ## License and third-party materials / 许可与第三方素材
 
-Original plugin code and project-authored documentation use [Apache-2.0](LICENSE). The EDPB original template and its unofficial Chinese working translation are listed in [NOTICE](NOTICE) and are not relicensed as Apache-2.0. The project owner confirmed redistribution rights for the translation on 2026-10-14.
+On the current `main` branch, original plugin code and project-authored documentation use [GNU AGPL v3.0 only](LICENSE) (`AGPL-3.0-only`). The already published `v0.3.11-beta.5` tag and release archive remain under Apache-2.0; that earlier grant is not withdrawn. The EDPB original template and its unofficial Chinese working translation are listed in [NOTICE](NOTICE) and are not relicensed under AGPL. The project owner confirmed redistribution rights for the translation on 2026-10-14.
 
-原创插件代码及项目自制说明采用 Apache-2.0。EDPB 原模板与非官方中文工作译本按 NOTICE 单独标注，不因随包提供而变为 Apache-2.0 素材。项目负责人已确认译本可公开再分发。
+当前 `main` 分支的原创插件代码及项目自制说明采用 GNU AGPL v3.0 only（`AGPL-3.0-only`）。已发布的 `v0.3.11-beta.5` 标签和归档仍按 Apache-2.0 提供，既有授权不追溯撤回。EDPB 原模板与非官方中文工作译本按 NOTICE 单独标注，不因随包提供而变为 AGPL 素材；项目负责人已确认译本可公开再分发。
 
 ## Data and limits / 数据与限制
 

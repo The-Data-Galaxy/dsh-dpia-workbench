@@ -1,8 +1,10 @@
 DSH DPIA Workbench
 
-Original plugin code and project-authored documentation are licensed under the
-Apache License, Version 2.0, as stated in LICENSE. The EDPB template files
-listed below are third-party materials and are not relicensed under Apache-2.0:
+Original plugin code and project-authored documentation on the current main
+branch are licensed under GNU AGPL v3.0 only (AGPL-3.0-only), as stated in
+LICENSE. The published v0.3.11-beta.5 tag and release archive remain under
+Apache-2.0. The EDPB template files listed below are third-party materials
+and are not relicensed under AGPL-3.0-only:
 
 - skill/assets/official/edpb-2026-v1-en.docx — European Data Protection Board,
   "Template for Data Protection Impact Assessment", consultation version.

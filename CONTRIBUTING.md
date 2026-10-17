@@ -9,7 +9,7 @@ This is an unofficial DeepSeek Harness plugin. Contributions that make assessmen
 - Keep facts, source references, professional decisions, and delivery state distinct. Do not turn a model suggestion into an automatic legal approval.
 - Use synthetic fixtures. Do not submit client assessments, personal data, API keys, access tokens, or proprietary documents to issues or pull requests.
 - Describe the affected DSH version, profile, operating system, steps to reproduce, expected result, and observed result. Redact local paths and credentials from logs.
-- Changes to original plugin code and project-authored documentation are submitted under Apache-2.0. The EDPB template and unofficial Chinese working translation have separate notices in [NOTICE](NOTICE); do not assume they are Apache-2.0 material.
+- Contributions to original plugin code and project-authored documentation on `main` are submitted under `AGPL-3.0-only`. The earlier `v0.3.11-beta.5` release remains Apache-2.0. The EDPB template and unofficial Chinese working translation have separate notices in [NOTICE](NOTICE); do not assume they are AGPL material.
 
 请保持事实、材料来源、专业决定和交付状态的区分。测试只用合成材料；Issue 和 PR 不提交真实评估、个人数据、密钥或专有文档。报告问题时写明 DSH 版本、profile、系统、复现步骤和实际结果，并清除日志中的凭据及个人路径。
 
