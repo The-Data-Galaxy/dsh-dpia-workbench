@@ -1,14 +1,20 @@
 # DSH DPIA Workbench / DPIA 工作台
 
-> **Pre-release v0.3.11-beta.6 (AGPL-3.0-only).** Read the [release notes](https://github.com/The-Data-Galaxy/dsh-dpia-workbench/releases/tag/v0.3.11-beta.6) and limits below before installing.
+> **Pre-release v0.3.11-beta.7 (AGPL-3.0-only).** Read the [release notes](https://github.com/The-Data-Galaxy/dsh-dpia-workbench/releases/tag/v0.3.11-beta.7) and limits below before installing.
 
-**License note:** beta.6 uses `AGPL-3.0-only` for original project material. The earlier beta.5 tag and archive remain Apache-2.0. See [License and third-party materials](#license-and-third-party-materials--许可与第三方素材).
+**License note:** beta.7 uses `AGPL-3.0-only` for original project material. The earlier beta.5 tag and archive remain Apache-2.0. See [License and third-party materials](#license-and-third-party-materials--许可与第三方素材).
 
 A DeepSeek Harness bundle for versioned data protection impact assessments. It keeps source material and fact corrections, supports follow-up questions and reassessment, and prepares reviewable reports with a record of versions and outstanding decisions.
 
 这是一个用于 DeepSeek Harness 的 DPIA 工作台插件：保留材料来源与事实修订，支持补答复评，并生成带版本和未决事项记录的报告。
 
 Created and maintained by **[朱玲凤](https://xingchendata.com/)** · [个人网站「那一片数据星辰」](https://xingchendata.com/).
+
+## Community contact
+
+Home and help automatically load the [current community QR](https://xingchendata.com/dsh-dpia-workbench.html#community), every five minutes while visible and immediately on foreground return. Expired/full/paused groups are skipped; the personal website remains available. Retry appears only after configuration/image failure. A maintainer provides new WeChat QR codes; the plugin cannot generate them or detect actual group membership.
+
+This is the open-source GDPR DPIA edition. The domestic PIA/policy commercial product is separate: do not overwrite its installed package with this archive. Contact refresh sends no assessment content and calls no model.
 
 ## What it does / 产品特点
 
@@ -19,18 +25,20 @@ Created and maintained by **[朱玲凤](https://xingchendata.com/)** · [个人�
 
 ## Demo video / 演示视频
 
-[Watch the 2-minute Chinese walkthrough on YouTube / 在线播放中文演示](https://youtu.be/KpXfrbogNZ0). It uses a synthetic example and shows the **0.3.10** interface: installation, materials, analysis results, follow-up answers, reassessment and the report entry. It does not show a completed formal report or download. Use the beta.6 installation instructions below; the video shows an older local `.tgz` installation.
+[Watch the 2-minute Chinese walkthrough on YouTube / 在线播放中文演示](https://youtu.be/KpXfrbogNZ0). It uses a synthetic example and shows the **0.3.10** interface: installation, materials, analysis results, follow-up answers, reassessment and the report entry. It does not show a completed formal report or download. Use the beta.7 installation instructions below; the video shows an older local `.tgz` installation.
 
-这段视频使用合成案例，画面录于 **0.3.10**；只展示到报告入口，没有拍摄正式报告生成或下载。安装当前 beta.6 请以本仓库命令为准。
+这段视频使用合成案例，画面录于 **0.3.10**；只展示到报告入口，没有拍摄正式报告生成或下载。安装当前 beta.7 请以本仓库命令为准。
 
 ![0.3.10 synthetic walkthrough: installation, materials, analysis, answers, reassessment, and report entry](media/demo-overview-0.3.10.jpg)
 
-## Current evidence / 当前证据
+## Current evidence
 
-- Published pre-release: **0.3.11-beta.6**. Its runtime JavaScript and test logic are unchanged from beta.5; this version updates the license, documentation, and version metadata. See the matching release notes for artifact checks.
-- The installed **0.3.10** baseline passed a real-host saved-result and refresh replay with DeepSeek Harness Desktop **0.2.0-rc.2** on macOS; its internal automated suite ended with 111 passing checks. That evidence does not certify the later source candidate.
-- The previous beta.5 archive installed in a new isolated DSH web profile. In Safari, the plugin entry and empty state appeared; a synthetic assessment was created and reopened after refresh without configuring a model key. No analysis or report was run. That host result is reused for unchanged runtime code; beta.6 has not received a separate host installation smoke test.
-- Installation on another machine, Windows compatibility, and full-page layout of long reports have not been established by this evidence.
+- **0.3.11-beta.7** was installed once in an isolated web profile on macOS using official DSH Desktop CLI 0.2.1-rc.2; all 70 installed files match the frozen archive. No commercial profile was changed.
+- Actual Chrome E2E covered the public website-to-plugin QR, help close/Esc and focus return, assessment preservation, website fallback, foreground refresh, and interval HTTP 200 after **300.293 seconds** without clicking refresh.
+- The once-only 22-file internal regression ended with **121 distinct passes**, after failed-only fixture/evidence rechecks. It was not initially all green; this count is not the standalone public repository suite. Focused tests cover replacement codes, expiry/full states, failures, validation, races and cleanup.
+- The exact **363,443-byte** archive retains its pre-acceptance README. Candidate wording/internal status references in that frozen document are historical. The [release notes](https://github.com/The-Data-Galaxy/dsh-dpia-workbench/releases/tag/v0.3.11-beta.7) state current results; the other **69 archive files** match tagged source byte for byte.
+- Other machines, Windows, a full model-driven analysis journey and long-report layout remain unverified. No model call or report render was performed for this release.
+
 
 ## Workflow / 使用流程
 
@@ -66,17 +74,17 @@ The bundled Skill needs Python 3.9+. Document extraction and report checks need 
 
 ## Tests / 测试
 
-The `test/` directory contains nine files adapted from the internal suite that do not depend on private cases or absolute development paths. The beta.3 standalone suite ran once: 46 Node checks and 17 template-preservation checks passed; the native-PDF group initially passed 3/4, with one test failing because it still wrote to an internal evidence path. After removing that test-only path, only the failed test was rerun and passed. Thus 67 distinct checks passed with none skipped, although the initial suite run was not all green. The beta.6 runtime and test logic are unchanged from that corrected beta.3 candidate. See the matching release notes for artifact-specific checks; internal tests requiring local cases, scripts or Codex runtimes were intentionally left out. See [CONTRIBUTING.md](CONTRIBUTING.md) for focused commands.
+The `test/` directory contains nine files adapted from the internal suite that do not depend on private cases or absolute development paths. The beta.3 standalone suite ran once: 46 Node checks and 17 template-preservation checks passed; the native-PDF group initially passed 3/4, with one test failing because it still wrote to an internal evidence path. After removing that test-only path, only the failed test was rerun and passed. Thus 67 distinct checks passed with none skipped, although the initial suite run was not all green. The beta.7 runtime and test logic are unchanged from that corrected beta.3 candidate. See the matching release notes for artifact-specific checks; internal tests requiring local cases, scripts or Codex runtimes were intentionally left out. See [CONTRIBUTING.md](CONTRIBUTING.md) for focused commands.
 
-`test/` 保留九个不依赖内部案例或个人绝对路径的测试文件。beta.3 独立全组仅运行一次，最终 67 项各通过、0 跳过；原生 PDF 组初次有一项测试夹具残留内部路径，修正后只复验该失败项。beta.6 的运行时与修正后的测试逻辑不变；对应标签的制品核验结果以发布说明为准。
+`test/` 保留九个不依赖内部案例或个人绝对路径的测试文件。beta.3 独立全组仅运行一次，最终 67 项各通过、0 跳过；原生 PDF 组初次有一项测试夹具残留内部路径，修正后只复验该失败项。beta.7 的运行时与修正后的测试逻辑不变；对应标签的制品核验结果以发布说明为准。
 
 ## Installation / 安装
 
 Use a DSH profile whose existing plugins and data have been backed up. Install from the published GitHub tag, or install the exact release archive from its local path. Then start that profile:
 
 ```sh
-dsh plugin --profile web add github:The-Data-Galaxy/dsh-dpia-workbench#v0.3.11-beta.6
-# Or: dsh plugin --profile web add /absolute/path/dsh-dpia-workbench-0.3.11-beta.6.tgz
+dsh plugin --profile web add github:The-Data-Galaxy/dsh-dpia-workbench#v0.3.11-beta.7
+# Or: dsh plugin --profile web add /absolute/path/dsh-dpia-workbench-0.3.11-beta.7.tgz
 dsh --profile web
 ```
 

@@ -19,6 +19,8 @@ function fixture(c=base()){
   if(Array.isArray(n))return n.map((x,i)=>expand(x,at+'.'+i));
   if(!('type' in n))throw Error('Objects are not valid as a React child: '+Object.keys(n).join(','));
   if(typeof n.type==='function'){
+   // Contact networking is covered by community.test.mjs.
+   if(n.type.name==='CommunityContact')return {type:'section',props:{'data-testid':'community-contact'},children:[]};
    if(n.type.prototype instanceof Component){const key=at+':'+(n.props.key||'');let inst=boundaries.get(key);if(!inst){inst=new n.type(n.props);boundaries.set(key,inst);}inst.props=n.props;
     try{return expand(inst.render(),at+'.boundary');}catch(e){if(!n.type.getDerivedStateFromError)throw e;inst.state={...inst.state,...n.type.getDerivedStateFromError(e)};return expand(inst.render(),at+'.fallback');}}
    return expand(n.type(n.props),at+'.function');

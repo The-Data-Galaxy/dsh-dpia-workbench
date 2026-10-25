@@ -2,6 +2,88 @@ window.__ModuleLoader__.load({id:'dsh-dpia-workbench',factory:function(require){
  const exports={},React=require('react');
  'use strict';
  const h=React.createElement;
+ // COMMUNITY-CORE-BEGIN
+ function createCommunityController(options={}){
+  const endpoint='https://xingchendata.com/community/dpia.json';
+  const fetcher=options.fetch||globalThis.fetch,now=options.now||Date.now;
+  const later=options.setTimeout||setTimeout,cancel=options.clearTimeout||clearTimeout;
+  const onChange=options.onChange||(()=>{});
+  let running=false,visible=options.visible!==false,serial=0,request=null,refreshTimer=null,expiryTimer=null;
+  let current={status:'loading'};
+  function publish(value){current=value;onChange(value);}
+  function clearTimers(){cancel(refreshTimer);cancel(expiryTimer);refreshTimer=expiryTimer=null;}
+  function abortRequest(){if(request){request.abort.abort();request.finish();cancel(request.timer);request=null;}}
+  function parse(data){
+   if(data?.schemaVersion!==1||typeof data.revision!=='string'||!data.revision||data.revision.length>100||!Array.isArray(data.groups)||data.groups.length>12)throw Error('INVALID_CONFIG');
+   const ids=new Set();
+   const groups=data.groups.map(group=>{
+    if(!group||typeof group.id!=='string'||!/^[a-z0-9][a-z0-9-]{0,63}$/.test(group.id)||ids.has(group.id)||typeof group.name!=='string'||!group.name.trim()||group.name.length>100||!['open','full','paused'].includes(group.state))throw Error('INVALID_GROUP');
+    ids.add(group.id);
+    if(typeof group.expiresAt!=='string'||!/T.*(?:Z|[+-]\d{2}:\d{2})$/.test(group.expiresAt)||!Number.isFinite(Date.parse(group.expiresAt)))throw Error('INVALID_EXPIRY');
+    const image=new URL(group.image);
+    if(image.origin!=='https://xingchendata.com'||image.username||image.password||image.hash||!/^\/community\/images\/[a-zA-Z0-9_-]+\.(png|jpe?g|webp)$/.test(image.pathname))throw Error('INVALID_IMAGE');
+    return {id:group.id,name:group.name,state:group.state,image:image.href,expiresAt:group.expiresAt,expires:Date.parse(group.expiresAt)};
+   });
+   const group=groups.find(item=>item.state==='open'&&item.expires>now());
+   return group?{status:'ready',revision:data.revision,group}:{status:'unavailable',revision:data.revision};
+  }
+  async function boundedJson(response){
+   if(!response.ok||response.redirected||!(response.headers.get('content-type')||'').toLowerCase().includes('application/json'))throw Error('CONFIG_HTTP_ERROR');
+   if(Number(response.headers.get('content-length'))>65536)throw Error('CONFIG_TOO_LARGE');
+   const reader=response.body?.getReader();if(!reader)throw Error('EMPTY_CONFIG');
+   const decoder=new TextDecoder();let count=0,text='';
+   try{for(;;){const part=await reader.read();if(part.done)break;count+=part.value.byteLength;if(count>65536){await reader.cancel();throw Error('CONFIG_TOO_LARGE');}text+=decoder.decode(part.value,{stream:true});}text+=decoder.decode();}
+   finally{reader.releaseLock();}
+   return JSON.parse(text);
+  }
+  function schedule(){cancel(refreshTimer);if(running&&visible)refreshTimer=later(()=>{void refresh();},300000);}
+  async function refresh(){
+   if(!running||!visible)return;
+   const ticket=++serial;clearTimers();abortRequest();publish({status:'loading'});
+   const abort=new AbortController();let rejectRequest;
+   const interrupted=new Promise((_,reject)=>{rejectRequest=reject;});
+   const active={abort,finish:()=>rejectRequest(Error('CONFIG_CANCELLED')),timer:null};
+   active.timer=later(()=>{abort.abort();rejectRequest(Error('CONFIG_TIMEOUT'));},8000);request=active;
+   try{
+    const response=await Promise.race([Promise.resolve().then(()=>fetcher(endpoint+'?t='+now()+'-'+ticket,{cache:'no-store',credentials:'omit',mode:'cors',redirect:'error',referrerPolicy:'no-referrer',headers:{Accept:'application/json'},signal:abort.signal})),interrupted]);
+    const data=await Promise.race([boundedJson(response),interrupted]);
+    if(!running||!visible||ticket!==serial)return;
+    const next=parse(data);publish(next);
+    if(next.status==='ready')expiryTimer=later(()=>{if(running&&visible&&ticket===serial){publish({status:'loading'});void refresh();}},Math.min(next.group.expires-now(),2147483647));
+   }catch(error){if(running&&visible&&ticket===serial)publish({status:'error'});}
+   finally{cancel(active.timer);if(request===active)request=null;if(ticket===serial)schedule();}
+  }
+  return {
+   start(){if(running)return;running=true;return refresh();},
+   refresh,
+   setVisible(value){const next=Boolean(value);if(visible===next)return;visible=next;if(!running)return;if(!next){serial++;clearTimers();abortRequest();publish({status:'loading'});}else return refresh();},
+   imageFailed(image){if(running&&current.status==='ready'&&current.group.image===image){cancel(expiryTimer);publish({status:'error'});}},
+   stop(){running=false;serial++;clearTimers();abortRequest();},
+   state:()=>current
+  };
+ }
+ // COMMUNITY-CORE-END
+ function CommunityContact(){
+  const [value,setValue]=React.useState({status:'loading'}),controller=React.useRef(null),container=React.useRef(null);
+  React.useEffect(()=>{
+   const doc=typeof document!=='undefined'?document:null,win=typeof window!=='undefined'?window:null;
+   let intersecting=true;
+   const ctrl=createCommunityController({onChange:setValue,visible:!doc?.hidden});controller.current=ctrl;
+   const visibility=()=>ctrl.setVisible(intersecting&&!doc?.hidden),focus=()=>{if(intersecting&&!doc?.hidden)void ctrl.refresh();};
+   const observer=typeof IntersectionObserver!=='undefined'?new IntersectionObserver(entries=>{intersecting=entries.some(entry=>entry.isIntersecting);visibility();}):null;
+   if(observer&&container.current)observer.observe(container.current);
+   doc?.addEventListener('visibilitychange',visibility);win?.addEventListener?.('focus',focus);void ctrl.start();
+   return()=>{observer?.disconnect();doc?.removeEventListener('visibilitychange',visibility);win?.removeEventListener?.('focus',focus);ctrl.stop();controller.current=null;};
+  },[]);
+  const ready=value.status==='ready';
+  return h('section',{className:'card community-card',ref:container,'data-testid':'community-contact'},h('div',{className:'community-layout'},h('div',null,h('h2',null,ready?value.group.name:'开源 DPIA 工作台技术交流群'),h('p',{role:'status','aria-live':'polite'},ready?'安装答疑、功能交流与问题反馈。':value.status==='loading'?'正在加载群二维码…':value.status==='unavailable'?'新的入群入口正在准备，可稍后再查看。':'群二维码暂时无法加载，可重试或访问个人网站。'),value.status==='error'&&h('button',{type:'button',onClick:()=>controller.current?.refresh()},'重试'),h('p',null,h('a',{href:'https://xingchendata.com/',target:'_blank',rel:'noopener noreferrer'},'访问个人网站 ↗'))),ready&&h('figure',null,h('img',{key:value.group.image,src:value.group.image,alt:value.group.name+'二维码',width:220,height:220,referrerPolicy:'no-referrer',onError:()=>controller.current?.imageFailed(value.group.image)}),h('figcaption',null,'微信群 · 产品交流与反馈'))));
+ }
+ function CommunityHelp({onClose}){
+  const dialog=React.useRef(null);
+  React.useEffect(()=>{const previous=document.activeElement;dialog.current?.showModal();return()=>{if(dialog.current?.open)dialog.current.close();previous?.focus?.();};},[]);
+  return h('dialog',{ref:dialog,className:'community-dialog','aria-labelledby':'dpia-community-title',onCancel:event=>{event.preventDefault();onClose();},onClick:event=>{if(event.target===event.currentTarget){const r=event.currentTarget.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)onClose();}}},h('header',null,h('h2',{id:'dpia-community-title'},'帮助与交流'),h('button',{type:'button',onClick:onClose,'aria-label':'关闭帮助与交流'},'关闭 ×')),h(CommunityContact));
+ }
+
  function factText(value){
   if(value===null||value===undefined)return '未提供';
   if(Array.isArray(value))return value.length?value.map(factText).join('；'):'空列表';
@@ -20,13 +102,15 @@ window.__ModuleLoader__.load({id:'dsh-dpia-workbench',factory:function(require){
  }
  function PageContent({render}){return render();}
  const css=`.dpia{box-sizing:border-box;height:100%;overflow:auto;background:#f6f8fc;color:#182438;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;padding:32px}.dpia *{box-sizing:border-box}.dpia h1{font-size:27px;margin:0}.dpia h2{font-size:18px;margin:0 0 14px}.dpia h3{font-size:15px;margin:0}.dpia p{margin:6px 0 16px}.dpia .muted{color:#617086}.dpia .top{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:24px}.dpia .pill{background:#e9efff;color:#3055a1;padding:4px 10px;border-radius:20px;white-space:nowrap}.dpia .grid{display:grid;grid-template-columns:minmax(230px,1fr) minmax(360px,2.5fr);gap:20px}.dpia .card{background:#fff;border:1px solid #dde4ef;border-radius:14px;padding:20px;margin-bottom:16px}.dpia label{display:block;font-weight:600;margin:12px 0 4px}.dpia input,.dpia textarea,.dpia select{display:block;width:100%;font:inherit;padding:9px 11px;border:1px solid #bdcadd;border-radius:7px;background:white;color:#182438}.dpia textarea{min-height:82px;resize:vertical}.dpia button{font:inherit;cursor:pointer;border:1px solid #c7d3e5;background:white;color:#28425f;padding:8px 13px;border-radius:7px;margin:8px 8px 0 0}.dpia button.primary{background:#2d5fd2;color:white;border-color:#2d5fd2}.dpia button:disabled{opacity:.5;cursor:wait}.dpia button:focus-visible,.dpia input:focus,.dpia textarea:focus,.dpia select:focus{outline:2px solid #618cf0;outline-offset:2px}.dpia .case{width:100%;text-align:left;margin:0 0 8px;padding:12px}.dpia .case.active{border-color:#2d5fd2;background:#eff4ff}.dpia .case small{display:block;color:#617086}.dpia .notice{padding:12px 16px;background:#edf3ff;border-radius:8px;margin-bottom:16px}.dpia .error{background:#fff0ee;color:#923427;white-space:pre-wrap}.dpia .row{border-top:1px solid #e6ebf3;padding:12px 0;overflow-wrap:anywhere}.dpia code,.dpia pre{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.dpia details{margin:10px 0}.dpia summary{cursor:pointer;font-weight:600}.dpia .stats{display:flex;gap:12px;flex-wrap:wrap}.dpia .stats span{background:#f2f5fa;border-radius:8px;padding:8px 14px}.dpia .actions{display:flex;flex-wrap:wrap}.dpia .report-table{border-collapse:collapse;width:100%;margin:12px 0}.dpia .report-table td,.dpia .report-table th{border:1px solid #d9d9d9;padding:8px;text-align:left;overflow-wrap:anywhere}.dpia .report-table th{background:#f2f5fa}.dpia .hint{font-size:12px;color:#617086}@media(max-width:850px){.dpia{padding:18px}.dpia .grid{grid-template-columns:1fr}.dpia .top{display:block}}`;
+ const communityCss='.dpia .community-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.dpia .community-top button{margin:0}.dpia .community-layout{display:grid;grid-template-columns:minmax(0,1fr) 220px;align-items:center;gap:24px}.dpia .community-card a{color:#285db8}.dpia .community-card figure{margin:0;text-align:center}.dpia .community-card img{display:block;width:220px;max-width:100%;height:auto;aspect-ratio:1;background:white;border:1px solid #e1e6ee;border-radius:8px}.dpia .community-card figcaption{font-size:12px;color:#617086;margin-top:8px}.dpia .community-dialog{color:inherit;background:#f6f8fc;width:min(720px,94vw);max-height:90vh;border:1px solid #c7d3e5;border-radius:14px;padding:22px;overflow:auto}.dpia .community-dialog::backdrop{background:#14243c88}.dpia .community-dialog>header{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}.dpia .community-dialog>header h2{margin:0}.dpia .community-dialog>header button{margin:0}.dpia .community-dialog .community-card{margin:0}@media(max-width:600px){.dpia .community-layout{grid-template-columns:1fr}.dpia .community-card figure{justify-self:center}.dpia .community-top{margin-top:12px}.dpia .community-dialog{padding:16px}}';
  const messages={INTERNAL_WORD_UNAVAILABLE:'Word生成环境不可用。原报告已保留，请核对文档Python依赖后重试。',INTERNAL_REPORT_BASIS_MISMATCH:'报告依据已变化，请关闭预览并重新打开当前版本。',REPORT_CONTENT_REVIEW_FAILED:'报告内容检查尚未通过。请查看本轮字段与页面检查记录，修复报告后再完成交付；原文件已保留。',REPORT_PAGE_REVIEW_FAILED:'存在未通过或已失效的页面检查，请逐页核对当前版本。',REPORT_PAGE_REVIEW_MISSING:'尚未检查全部页面，请完成逐页检查后再交付。',EXECUTION_BUSY:'该评估正在运行或提交，请稍后查看会话。',STALE_EXECUTION:'运行状态已经更新，请刷新后再操作。',HOST_STATUS_UNAVAILABLE:'暂时无法核对 DSH 状态，请恢复连接后重试。',CORRUPT_EXECUTION:'运行记录无法读取，原文件已保留。',STALE_VERSION:'这条评估已有更新。请点击“刷新”，核对后重新保存。',PYTHON_NOT_AVAILABLE:'未找到 Python 3。请配置 DSH_DPIA_PYTHON 后重启本插件。',CORRUPT_STATE:'保存记录无法读取。原文件已保留，请勿覆盖；请根据数据目录检查并恢复。',SOURCE_NOT_FOUND:'请选择已保存的证据来源。',INVALID_TEXT:'请填写必填字段，证据正文最多 100,000 字符。',CASE_LIMIT:'此评估达到本实验容量限制，请导出并拆分材料。',ARCHIVE_SELECTION_EMPTY:'请至少选择一个分析版本、报告或材料。',ARCHIVE_SOURCE_CHANGED:'所选文件摘要已变化，归档已阻止；请核对原件。',ARCHIVE_TOO_LARGE:'所选内容超过 150 MB，请拆分归档范围。',INTERNAL_REPORT_DIGEST_MISMATCH:'已生成内部报告的摘要不一致，原文件已保留，请核对。'};
  function errText(e){return messages[e.message]||`操作失败：${e.message}。请检查连接或数据目录后重试。`;}
  function Field({name,label,area=false,...props}){return h('label',null,label,h(area?'textarea':'input',{name,required:true,...props}));}
  function Form({onSave,children,label,busy}){return h('form',{onSubmit:async e=>{e.preventDefault();const form=e.currentTarget;const data=new FormData(form),values=Object.fromEntries(data);for(const select of form.querySelectorAll('select[multiple]'))values[select.name]=data.getAll(select.name);const ok=await onSave(values);if(ok)form.reset();}},children,h('button',{className:'primary',disabled:busy,type:'submit'},label));}
  function Workbench({rpc,openSession}){
   const [index,setIndex]=React.useState({cases:[],testFixtures:[],errors:[]}),[current,setCurrent]=React.useState(null),[execution,setExecution]=React.useState(null),[tab,setTab]=React.useState(0),[search,setSearch]=React.useState(''),[filter,setFilter]=React.useState('active'),[busy,setBusy]=React.useState(false),[error,setError]=React.useState(''),[note,setNote]=React.useState(''),[modal,setModal]=React.useState(null),[selectedAnswers,setSelectedAnswers]=React.useState([]),[reports,setReports]=React.useState([]);
-  const refreshSerial=React.useRef(0),executionRef=React.useRef(null);
+  const [helpOpen,setHelpOpen]=React.useState(false);
+ const refreshSerial=React.useRef(0),executionRef=React.useRef(null);
   executionRef.current=execution;
   const alive=React.useRef(true),ticket=React.useRef(0),currentRef=React.useRef(null),inFlight=React.useRef(false);
   currentRef.current=current;
@@ -178,9 +262,10 @@ window.__ModuleLoader__.load({id:'dsh-dpia-workbench',factory:function(require){
   const executionLabel=!execution?.sessionId?'尚未启动':execution.statusKnown===false?'宿主状态暂不可读':execution.running?'运行中':execution.phase==='uncertain'?'回执待核':execution.phase==='cancel_requested'?'中止请求待完成':execution.phase==='cancelled'?'已中止':execution.recoverable?'会话丢失，可恢复':'已停止';
   const syncLabel=current?.resultError?'读取失败':execution?.sync?.state==='failed'?'同步失败（旧版保留）':result?'已同步':execution?.sync?.state==='waiting'?'等待完整成果':'尚无结果';
   const cases=index.cases.filter(c=>c.title.toLowerCase().includes(search.toLowerCase())&&(filter==='archived'?c.archived:filter==='pending'?!c.archived&&(c.openGaps===null||c.openGaps>0):!c.archived));
-  return h('div',{className:'dpia','data-testid':'dpia-workbench'},h('style',null,css),h('header',{className:'top'},h('div',null,h('h1',null,'DPIA 工作台'),p('材料、分析、补答、整改与报告，关联到同一评估版本。','muted')),h('span',{className:'pill'},'完整版开发中 · Skill 0.7.8')),
+  return h('div',{className:'dpia','data-testid':'dpia-workbench'},h('style',null,css+communityCss),h('header',{className:'top'},h('div',null,h('h1',null,'DPIA 工作台'),p('材料、分析、补答、整改与报告，关联到同一评估版本。','muted')),h('div',{className:'community-top'},h('button',{type:'button',onClick:()=>setHelpOpen(true)},'帮助与交流'),h('span',{className:'pill'},'完整版开发中 · Skill 0.7.8'))),
    error&&h('div',{role:'alert',className:'notice error'},error),note&&h('div',{role:'status',className:'notice'},note),
-   h('div',{className:'grid'},h('aside',null,card('评估案件',h('input',{'aria-label':'搜索案件',placeholder:'搜索项目',value:search,onChange:e=>setSearch(e.target.value)}),h('select',{'aria-label':'案件筛选',value:filter,onChange:e=>setFilter(e.target.value)},h('option',{value:'active'},'当前案件'),h('option',{value:'pending'},'待处理'),h('option',{value:'archived'},'已归档')),cases.length===0&&p('没有匹配的案件。','muted'),...cases.map(c=>h('button',{className:'case'+(c.id===current?.id?' active':''),key:c.id,disabled:busy,onClick:()=>open(c.id)},h('strong',null,c.title),h('small',null,c.resultStatus==='synced'?c.openGaps+' 个待答 · '+c.riskCount+' 项风险记录':c.resultStatus==='failed'?'结果无法读取':'结果尚未同步'))),index.testFixtures.length>0&&details('测试样例（非正式评估）',...index.testFixtures.map(c=>button(c.title,()=>open(c.id)))),...index.errors.map(e=>p(e.id+'：'+e.error)),button('刷新',()=>current?open(current.id):refreshList())),card('新建评估',h(Form,{label:'创建评估',busy,onSave:v=>command('create',v)},h(Field,{name:'title',label:'项目名称',maxLength:200})),p('新评估为空，不预设日志问题或合规结论。','hint'))),h('main',null,!current?card('从材料开始',p('创建或选择一个评估。只有明确发起分析时才调用模型。')):h(React.Fragment,null,current.isTestFixture&&p('测试样例 · 非正式业务评估','notice'),card(current.title,p('执行：'+executionLabel+' ｜ 同步：'+syncLabel+' ｜ 评估：'+(result?.conditionalBasis?'条件分析':result?'以本轮记录为准':'尚未分析')),p('当前材料修订 '+current.version+' · 分析依据材料 '+(result?.record.inputVersion??'尚无')+(result&&result.record.materialDigest!==current.materialDigest?' · 有未纳入本轮的变化':''),'muted'),button(['uncertain','submitting'].includes(execution?.phase)?'重试同一请求':result?'基于当前材料继续分析':'开始分析',()=>start('分析当前有效材料'),true),execution?.sessionId&&button('打开执行会话',()=>openSession(execution.sessionId)),execution?.recoverable&&button('恢复评估会话（不调用模型）',async()=>{const r=await command('recoverSession',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote('会话已重新绑定，原任务和成果保留。核对本轮材料后可继续分析。');}}),execution?.unfinished&&h(React.Fragment,null,p('宿主已停止，本轮尚未完成交付。已有成果保留。','notice'),execution.kind!=='report'&&button('修复本轮输出（调用模型）',async()=>{const r=await command('repairOutput',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote('已提交产物修复；沿用原任务材料，不混入本轮之后的新输入。');}})),execution?.unarchivedInput&&h(React.Fragment,null,p('会话在本轮提交后有新增输入，可能尚未归档到工作台。请核对后整理。','notice'),button('整理会话新增输入',()=>start('整理本会话新增用户答复为带出处的来源记录，逐项关联问题后复评；没有确认事件的内容不能当作已确认事实'))),execution?.running&&button('中止当前任务',async()=>{const r=await command('cancel',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote(r.cancelAcknowledged?'已请求中止当前任务；宿主队列保留。':'中止回执未确认，请打开会话核对。');}}),telemetryCard(),button('刷新运行状态',()=>refreshCurrent()),button('重试同步（不调用模型）',async()=>{const r=await command('sync',{},false);if(r){setNote(r.state==='synced'?'结果已同步':r.state==='waiting'?'任务尚未提交完整成果；可打开会话核对。':'同步失败：'+(r.details||r.code));if(r.state==='synced')await open(current.id);}}),execution?.sync?.state==='failed'&&p((execution.sync.details||[execution.sync.code]).join('\n'),'error')),h('nav',{className:'actions','aria-label':'评估页签'},...['总览','材料与事实','问题与补答','评估与风险','整改与复评','报告与版本'].map((name,i)=>h('button',{key:name,type:'button',className:tab===i?'primary':'',onClick:()=>setTab(i)},name))),h(RenderBoundary,{key:current.id+':'+tab+':'+(result?.record.revisionId||''),onHome:()=>{setModal(null);setTab(0);}},h(PageContent,{render:pages[tab]}))))),
+   h('div',{className:'grid'},h('aside',null,card('评估案件',h('input',{'aria-label':'搜索案件',placeholder:'搜索项目',value:search,onChange:e=>setSearch(e.target.value)}),h('select',{'aria-label':'案件筛选',value:filter,onChange:e=>setFilter(e.target.value)},h('option',{value:'active'},'当前案件'),h('option',{value:'pending'},'待处理'),h('option',{value:'archived'},'已归档')),cases.length===0&&p('没有匹配的案件。','muted'),...cases.map(c=>h('button',{className:'case'+(c.id===current?.id?' active':''),key:c.id,disabled:busy,onClick:()=>open(c.id)},h('strong',null,c.title),h('small',null,c.resultStatus==='synced'?c.openGaps+' 个待答 · '+c.riskCount+' 项风险记录':c.resultStatus==='failed'?'结果无法读取':'结果尚未同步'))),index.testFixtures.length>0&&details('测试样例（非正式评估）',...index.testFixtures.map(c=>button(c.title,()=>open(c.id)))),...index.errors.map(e=>p(e.id+'：'+e.error)),button('刷新',()=>current?open(current.id):refreshList())),card('新建评估',h(Form,{label:'创建评估',busy,onSave:v=>command('create',v)},h(Field,{name:'title',label:'项目名称',maxLength:200})),p('新评估为空，不预设日志问题或合规结论。','hint'))),h('main',null,!current?h(React.Fragment,null,card('从材料开始',p('创建或选择一个评估。只有明确发起分析时才调用模型。')),!helpOpen&&h(CommunityContact)):h(React.Fragment,null,current.isTestFixture&&p('测试样例 · 非正式业务评估','notice'),card(current.title,p('执行：'+executionLabel+' ｜ 同步：'+syncLabel+' ｜ 评估：'+(result?.conditionalBasis?'条件分析':result?'以本轮记录为准':'尚未分析')),p('当前材料修订 '+current.version+' · 分析依据材料 '+(result?.record.inputVersion??'尚无')+(result&&result.record.materialDigest!==current.materialDigest?' · 有未纳入本轮的变化':''),'muted'),button(['uncertain','submitting'].includes(execution?.phase)?'重试同一请求':result?'基于当前材料继续分析':'开始分析',()=>start('分析当前有效材料'),true),execution?.sessionId&&button('打开执行会话',()=>openSession(execution.sessionId)),execution?.recoverable&&button('恢复评估会话（不调用模型）',async()=>{const r=await command('recoverSession',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote('会话已重新绑定，原任务和成果保留。核对本轮材料后可继续分析。');}}),execution?.unfinished&&h(React.Fragment,null,p('宿主已停止，本轮尚未完成交付。已有成果保留。','notice'),execution.kind!=='report'&&button('修复本轮输出（调用模型）',async()=>{const r=await command('repairOutput',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote('已提交产物修复；沿用原任务材料，不混入本轮之后的新输入。');}})),execution?.unarchivedInput&&h(React.Fragment,null,p('会话在本轮提交后有新增输入，可能尚未归档到工作台。请核对后整理。','notice'),button('整理会话新增输入',()=>start('整理本会话新增用户答复为带出处的来源记录，逐项关联问题后复评；没有确认事件的内容不能当作已确认事实'))),execution?.running&&button('中止当前任务',async()=>{const r=await command('cancel',{executionRevision:execution.revision},false);if(r){setExecution(r);setNote(r.cancelAcknowledged?'已请求中止当前任务；宿主队列保留。':'中止回执未确认，请打开会话核对。');}}),telemetryCard(),button('刷新运行状态',()=>refreshCurrent()),button('重试同步（不调用模型）',async()=>{const r=await command('sync',{},false);if(r){setNote(r.state==='synced'?'结果已同步':r.state==='waiting'?'任务尚未提交完整成果；可打开会话核对。':'同步失败：'+(r.details||r.code));if(r.state==='synced')await open(current.id);}}),execution?.sync?.state==='failed'&&p((execution.sync.details||[execution.sync.code]).join('\n'),'error')),h('nav',{className:'actions','aria-label':'评估页签'},...['总览','材料与事实','问题与补答','评估与风险','整改与复评','报告与版本'].map((name,i)=>h('button',{key:name,type:'button',className:tab===i?'primary':'',onClick:()=>setTab(i)},name))),h(RenderBoundary,{key:current.id+':'+tab+':'+(result?.record.revisionId||''),onHome:()=>{setModal(null);setTab(0);}},h(PageContent,{render:pages[tab]}))))),
+   helpOpen&&h(CommunityHelp,{onClose:()=>setHelpOpen(false)}),
    modal&&h('div',{role:'dialog','aria-modal':true,'aria-label':modal.title,style:{position:'fixed',inset:0,background:'#14243c88',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}},h('section',{className:'card',style:{maxWidth:900,width:'90%',maxHeight:'88vh',display:'flex',flexDirection:'column',overflow:'hidden'}},h('header',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,flexShrink:0}},h('h2',null,modal.title),h('button',{type:'button','aria-label':'关闭窗口',onClick:()=>setModal(null),style:{margin:0,whiteSpace:'nowrap'}},'关闭 ×')),h('div',{className:'modal-body',style:{overflowY:'auto',minHeight:0}},h(RenderBoundary,{key:modal.title,onHome:()=>{setModal(null);setTab(0);}},modal.body),modal.run&&button('确认输入并开始运行',execute,true))))
   );
  }
